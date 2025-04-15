@@ -2,19 +2,17 @@
 #include <wx/colour.h>
 #include <wx/image.h>
 #include <string>
+#include <memory>  // Add this for smart pointers
 #include "chatbot.h"
 #include "chatlogic.h"
 #include "chatgui.h"
 
-// size of chatbot window
+// Define window dimensions as constants
 const int width = 414;
 const int height = 736;
 
 // wxWidgets APP
 IMPLEMENT_APP(ChatBotApp);
-
-std::string dataPath = "../";
-std::string imgBasePath = dataPath + "images/";
 
 bool ChatBotApp::OnInit()
 {
@@ -61,8 +59,8 @@ void ChatBotFrame::OnEnter(wxCommandEvent &WXUNUSED(event))
     // delete text in text control
     _userTextCtrl->Clear();
 
-    // send user text to chatbot 
-     _panelDialog->GetChatLogicHandle()->SendMessageToChatbot(std::string(userText.mb_str()));
+    // send user text to chatbot
+    _panelDialog->GetChatLogicHandle()->SendMessageToChatbot(std::string(userText.mb_str()));
 }
 
 BEGIN_EVENT_TABLE(ChatBotFrameImagePanel, wxPanel)
@@ -88,15 +86,15 @@ void ChatBotFrameImagePanel::paintNow()
 void ChatBotFrameImagePanel::render(wxDC &dc)
 {
     // load backgroud image from file
-    wxString imgFile = imgBasePath + "sf_bridge.jpg";
+    wxString imgFile = wxT("../images/sf_bridge.jpg");
     wxImage image;
     image.LoadFile(imgFile);
 
     // rescale image to fit window dimensions
     wxSize sz = this->GetSize();
-    wxImage imgSmall = image.Rescale(sz.GetWidth(), sz.GetHeight(), wxIMAGE_QUALITY_HIGH);
+    wxImage imgSmall = image.Rescale(sz.GetWidth(), sz.GetHeight());
+
     _image = wxBitmap(imgSmall);
-    
     dc.DrawBitmap(_image, 0, 0, false);
 }
 
@@ -118,13 +116,13 @@ ChatBotPanelDialog::ChatBotPanelDialog(wxWindow *parent, wxWindowID id)
     ////
 
     // create chat logic instance
-    _chatLogic = new ChatLogic(); 
+    _chatLogic = std::make_unique<ChatLogic>();
 
     // pass pointer to chatbot dialog so answers can be displayed in GUI
     _chatLogic->SetPanelDialogHandle(this);
 
-    // load answer graph from file
-    _chatLogic->LoadAnswerGraphFromFile(dataPath + "src/answergraph.txt");
+    // load answer graph from file - using direct path without variable
+    _chatLogic->LoadAnswerGraphFromFile("../src/answergraph.txt");
 
     ////
     //// EOF STUDENT CODE
@@ -135,7 +133,7 @@ ChatBotPanelDialog::~ChatBotPanelDialog()
     //// STUDENT CODE
     ////
 
-    delete _chatLogic;
+    // No need to delete _chatLogic anymore, the unique_ptr will handle it
 
     ////
     //// EOF STUDENT CODE
@@ -143,7 +141,7 @@ ChatBotPanelDialog::~ChatBotPanelDialog()
 
 void ChatBotPanelDialog::AddDialogItem(wxString text, bool isFromUser)
 {
-    // add a single dialog element to the sizer
+    // add a new dialog element to the sizer
     ChatBotPanelDialogItem *item = new ChatBotPanelDialogItem(this, text, isFromUser);
     _dialogSizer->Add(item, 0, wxALL | (isFromUser == true ? wxALIGN_LEFT : wxALIGN_RIGHT), 8);
     _dialogSizer->Layout();
@@ -182,10 +180,10 @@ void ChatBotPanelDialog::paintNow()
 void ChatBotPanelDialog::render(wxDC &dc)
 {
     wxImage image;
-    image.LoadFile(imgBasePath + "sf_bridge_inner.jpg");
+    image.LoadFile("../images/sf_bridge_inner.jpg");
 
     wxSize sz = this->GetSize();
-    wxImage imgSmall = image.Rescale(sz.GetWidth(), sz.GetHeight(), wxIMAGE_QUALITY_HIGH);
+    wxImage imgSmall = image.Rescale(sz.GetWidth(), sz.GetHeight());
 
     _image = wxBitmap(imgSmall);
     dc.DrawBitmap(_image, 0, 0, false);
@@ -195,10 +193,10 @@ ChatBotPanelDialogItem::ChatBotPanelDialogItem(wxPanel *parent, wxString text, b
     : wxPanel(parent, -1, wxPoint(-1, -1), wxSize(-1, -1), wxBORDER_NONE)
 {
     // retrieve image from chatbot
-    wxBitmap *bitmap = isFromUser == true ? nullptr : ((ChatBotPanelDialog*)parent)->GetChatLogicHandle()->GetImageFromChatbot(); 
+    wxBitmap *bitmap = isFromUser == true ? nullptr : ((ChatBotPanelDialog*)parent)->GetChatLogicHandle()->GetImageFromChatbot();
 
     // create image and text
-    _chatBotImg = new wxStaticBitmap(this, wxID_ANY, (isFromUser ? wxBitmap(imgBasePath + "user.png", wxBITMAP_TYPE_PNG) : *bitmap), wxPoint(-1, -1), wxSize(-1, -1));
+    _chatBotImg = new wxStaticBitmap(this, wxID_ANY, wxBitmap(isFromUser ? "../images/user.png" : "../images/bot.png", wxBITMAP_TYPE_PNG));
     _chatBotTxt = new wxStaticText(this, wxID_ANY, text, wxPoint(-1, -1), wxSize(150, -1), wxALIGN_CENTRE | wxBORDER_NONE);
     _chatBotTxt->SetForegroundColour(isFromUser == true ? wxColor(*wxBLACK) : wxColor(*wxWHITE));
 
@@ -212,5 +210,5 @@ ChatBotPanelDialogItem::ChatBotPanelDialogItem(wxPanel *parent, wxString text, b
     _chatBotTxt->Wrap(150);
 
     // set background color
-    this->SetBackgroundColour((isFromUser == true ? wxT("YELLOW") : wxT("BLUE")));
+    this->SetBackgroundColour(isFromUser == true ? wxT("YELLOW") : wxT("BLUE"));
 }

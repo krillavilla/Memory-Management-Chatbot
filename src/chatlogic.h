@@ -3,12 +3,14 @@
 
 #include <vector>
 #include <string>
-#include "chatgui.h"
+#include <memory>  // Add this for smart pointers
+#include <wx/bitmap.h>
 
 // forward declarations
 class ChatBot;
 class GraphEdge;
 class GraphNode;
+class ChatBotPanelDialog;
 
 class ChatLogic
 {
@@ -17,8 +19,8 @@ private:
     ////
 
     // data handles (owned)
-    std::vector<GraphNode *> _nodes;
-    std::vector<GraphEdge *> _edges;
+    // Update to use unique_ptr for exclusive ownership
+    std::vector<std::unique_ptr<GraphNode>> _nodes;
 
     ////
     //// EOF STUDENT CODE

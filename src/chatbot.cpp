@@ -21,7 +21,7 @@ ChatBot::ChatBot()
 ChatBot::ChatBot(std::string filename)
 {
     std::cout << "ChatBot Constructor" << std::endl;
-    
+
     // invalidate data handles
     _chatLogic = nullptr;
     _rootNode = nullptr;
@@ -45,12 +45,112 @@ ChatBot::~ChatBot()
 //// STUDENT CODE
 ////
 
+// Copy constructor
+ChatBot::ChatBot(const ChatBot &source)
+{
+    std::cout << "ChatBot Copy Constructor" << std::endl;
+
+    // Copy data handles
+    _currentNode = source._currentNode;
+    _rootNode = source._rootNode;
+    _chatLogic = source._chatLogic;
+
+    // Deep copy of image
+    _image = new wxBitmap(*source._image);
+}
+
+// Copy assignment operator
+ChatBot &ChatBot::operator=(const ChatBot &source)
+{
+    std::cout << "ChatBot Copy Assignment Operator" << std::endl;
+
+    if (this == &source)
+        return *this;
+
+    // Delete current image if it exists
+    if (_image != NULL)
+    {
+        delete _image;
+        _image = NULL;
+    }
+
+    // Copy data handles
+    _currentNode = source._currentNode;
+    _rootNode = source._rootNode;
+    _chatLogic = source._chatLogic;
+
+    // Deep copy of image
+    _image = new wxBitmap(*source._image);
+
+    return *this;
+}
+
+// Move constructor
+ChatBot::ChatBot(ChatBot &&source)
+{
+    std::cout << "ChatBot Move Constructor" << std::endl;
+
+    // Move data handles
+    _currentNode = source._currentNode;
+    _rootNode = source._rootNode;
+    _chatLogic = source._chatLogic;
+    _image = source._image;
+
+    // Update _chatLogic handle
+    if (_chatLogic != nullptr)
+    {
+        _chatLogic->SetChatbotHandle(this);
+    }
+
+    // Invalidate source
+    source._currentNode = nullptr;
+    source._rootNode = nullptr;
+    source._chatLogic = nullptr;
+    source._image = NULL;
+}
+
+// Move assignment operator
+ChatBot &ChatBot::operator=(ChatBot &&source)
+{
+    std::cout << "ChatBot Move Assignment Operator" << std::endl;
+
+    if (this == &source)
+        return *this;
+
+    // Delete current image if it exists
+    if (_image != NULL)
+    {
+        delete _image;
+        _image = NULL;
+    }
+
+    // Move data handles
+    _currentNode = source._currentNode;
+    _rootNode = source._rootNode;
+    _chatLogic = source._chatLogic;
+    _image = source._image;
+
+    // Update _chatLogic handle
+    if (_chatLogic != nullptr)
+    {
+        _chatLogic->SetChatbotHandle(this);
+    }
+
+    // Invalidate source
+    source._currentNode = nullptr;
+    source._rootNode = nullptr;
+    source._chatLogic = nullptr;
+    source._image = NULL;
+
+    return *this;
+}
+
 ////
 //// EOF STUDENT CODE
 
 void ChatBot::ReceiveMessageFromUser(std::string message)
 {
-    // loop over all edges and keywords and compute Levenshtein distance to query
+    // Loop over all edges and compute Levenshtein distance to query
     typedef std::pair<GraphEdge *, int> EdgeDist;
     std::vector<EdgeDist> levDists; // format is <ptr,levDist>
 
@@ -64,46 +164,53 @@ void ChatBot::ReceiveMessageFromUser(std::string message)
         }
     }
 
-    // select best fitting edge to proceed along
+    // Select best fitting edge to respond to message
     GraphNode *newNode;
     if (levDists.size() > 0)
     {
-        // sort in ascending order of Levenshtein distance (best fit is at the top)
+        // Sort by distance (best fit is at the top)
         std::sort(levDists.begin(), levDists.end(), [](const EdgeDist &a, const EdgeDist &b) { return a.second < b.second; });
-        newNode = levDists.at(0).first->GetChildNode(); // after sorting the best edge is at first position
+        newNode = levDists.at(0).first->GetChildNode(); // After sorting the best edge is at first position
     }
     else
     {
-        // go back to root node
+        // Use root node as fallback
         newNode = _rootNode;
     }
 
-    // tell current node to move chatbot to new node
+    // Tell current node to move chatbot to new node
     _currentNode->MoveChatbotToNewNode(newNode);
 }
 
 void ChatBot::SetCurrentNode(GraphNode *node)
 {
-    // update pointer to current node
+    // Update the current node
     _currentNode = node;
-
-    // select a random node answer (if several answers should exist)
-    std::vector<std::string> answers = _currentNode->GetAnswers();
-    std::mt19937 generator(int(std::time(0)));
-    std::uniform_int_distribution<int> dis(0, answers.size() - 1);
-    std::string answer = answers.at(dis(generator));
-
-    // send selected node answer to user
-    _chatLogic->SendMessageToUser(answer);
 }
+
+// Remove these method implementations as they're already defined inline in the header
+// void ChatBot::SetRootNode(GraphNode *rootNode)
+// {
+//    _rootNode = rootNode;
+// }
+
+// void ChatBot::SetChatLogicHandle(ChatLogic *chatLogic)
+// {
+//    _chatLogic = chatLogic;
+// }
+
+// wxBitmap *ChatBot::GetImageHandle() const
+// {
+//    return _image;
+// }
 
 int ChatBot::ComputeLevenshteinDistance(std::string s1, std::string s2)
 {
-    // convert both strings to upper-case before comparing
-    std::transform(s1.begin(), s1.end(), s1.begin(), ::toupper);
-    std::transform(s2.begin(), s2.end(), s2.begin(), ::toupper);
+    // Convert both strings to lower case before comparing
+    std::transform(s1.begin(), s1.end(), s1.begin(), ::tolower);
+    std::transform(s2.begin(), s2.end(), s2.begin(), ::tolower);
 
-    // compute Levenshtein distance measure between both strings
+    // Compute Levenshtein distance measure between both strings
     const size_t m(s1.size());
     const size_t n(s2.size());
 

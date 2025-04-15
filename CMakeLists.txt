@@ -4,7 +4,7 @@ set(CMAKE_CXX_STANDARD 17)
 
 project(Membot)
 
-find_package(wxWidgets REQUIRED COMPONENTS core base)
+find_package(wxWidgets 3.2 REQUIRED COMPONENTS core base)
 include(${wxWidgets_USE_FILE})
 
 file(GLOB project_SRCS src/*.cpp)
